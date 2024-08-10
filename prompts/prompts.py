@@ -1,7 +1,7 @@
 from langchain_core.prompts import ChatPromptTemplate
 
-CODE_GENERATOR_AGENT = ChatPromptTemplate.from_template(
-"""**Role**: You are a expert software python programmer. You need to develop python code
+CODE_GENERATOR_AGENT_PROMPT = ChatPromptTemplate.from_template(
+    """**Role**: You are a expert software python programmer. You need to develop python code
 **Task**: As a programmer, you are required to complete the function. Use a Chain-of-Thought approach to break
 down the problem, create pseudocode, and then write the code in Python language. Ensure that your code is
 efficient, readable, and well-commented.
@@ -14,8 +14,8 @@ efficient, readable, and well-commented.
 {requirement}"""
 )
 
-CODE_FIXER_AGENT = ChatPromptTemplate.from_template(
-"""**Role**: You are an expert Python software programmer specializing in debugging and refactoring code.
+CODE_FIXER_AGENT_PROMPT = ChatPromptTemplate.from_template(
+    """**Role**: You are an expert Python software programmer specializing in debugging and refactoring code.
 **Task**: As a programmer, you are required to fix the provided Python code. The code contains errors that need to be identified and corrected. Use a Chain-of-Thought approach to diagnose the problem, propose a solution, and then implement the fix.
 **Instructions**:
 1. **Understand and Clarify**: Thoroughly analyze the provided code and the associated error message.
