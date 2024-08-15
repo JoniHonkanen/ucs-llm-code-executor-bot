@@ -8,4 +8,7 @@ This project automates Python code generation, testing, debugging, and execution
 2. install packages -> pip install -r requirements.txt
 3. create .env file with own keys for openai and tavily
    1. OPENAI_API_KEY
-4. run program -> python main.py
+4. create config.ini
+   1. [LLM]
+      model=gpt-4o-mini
+5. run program -> python main.py

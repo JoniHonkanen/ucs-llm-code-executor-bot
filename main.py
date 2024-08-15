@@ -1,4 +1,5 @@
 import os
+import chainlit as cl
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
@@ -18,6 +19,15 @@ from schemas import GraphState
 
 load_dotenv()
 llm = get_openai_llm()
+
+
+# Streamlit when starting the chat
+@cl.on_chat_start
+async def on_chat_start():
+    await cl.Message(
+        content="Lets generate some code! What kind of program you are planning?"
+    ).send()
+
 
 # Define the paths.
 search_path = os.path.join(os.getcwd(), "generated")
@@ -60,7 +70,7 @@ def decide_to_end(state: GraphState):
     print(f"Entering in Decide to End")
     print(f"iterations: {state['iterations']}")
     if state["error"]:
-        if state["iterations"] > 0:
+        if state["iterations"] > 2:
             print("\n\n\nToo many iterations!!!!!!!!!\n\n\n")
             return "end"
         return "debugger"
@@ -95,26 +105,38 @@ workflow.set_entry_point("programmer")
 # Create the app and run it
 app = workflow.compile()
 # create the image of the graph
-app.get_graph().draw_mermaid_png(output_file_path="images/graphs/graph_flow.png")
+# app.get_graph().draw_mermaid_png(output_file_path="images/graphs/graph_flow.png")
 
-# amount of steps to run (node -> step), so no infinite loop will be created by accident
-# TODO: use iterations instread of steps??
-config = RunnableConfig(recursion_limit=10)
-# first invoke should have something to add to the state
-try:
-    results = app.invoke(
-        {
-            "messages": [
-                HumanMessage(
-                    # content="Simple website about bengal cats with html, css and javascript files. If images used, use some placeholder images."
-                    # content="Create hello world program with intentional error"
-                    # content="complicated Nodejs hello world program"
-                    content="Python hello world program, print 'Hello, World!' to the console, make error in the code"
-                )
-            ],
-            "iterations": 0,
-        },
-        config=config,
-    )
-except GraphRecursionError as e:
-    print(f"GraphRecursionError: {e}")
+
+@cl.on_message  # this function will be called every time a user inputs a message in the UI
+async def main(message: cl.Message):
+    print(message.content)
+    # amount of steps to run (node -> step), so no infinite loop will be created by accident
+    # TODO: use iterations instread of steps??
+    config = RunnableConfig(recursion_limit=10)
+    # first invoke should have something to add to the state
+
+    try:
+        results = app.invoke(
+            {
+                "messages": [
+                    HumanMessage(
+                        content=message.content
+                        # content="Simple website about bengal cats with html, css and javascript files. If images used, use some placeholder images."
+                        # content="simple C# hello world program, prints hello word"
+                        # content="simple NODEJS hello world program, prints hello word"
+                        # content="simple python hello world program, prints hello world"
+                        # content="complicated Nodejs hello world program"
+                        # content="Python hello world program, print 'Hello, World!' to the console, make error in the code"
+                    )
+                ],
+                "iterations": 0,
+            },
+            config=config,
+        )
+    except GraphRecursionError as e:
+        print(f"GraphRecursionError: {e}")
+    print("nRESULT:")
+    print(results)
+
+    await cl.Message("asd").send()

@@ -64,16 +64,18 @@ def execute_code_agent(state: GraphState, code_file):
 
         # Replace the script filename in the command with the full path
         execution_command[1] = executable_file_path
-        
+
         # Execute the command
         result = subprocess.run(execution_command, capture_output=True, text=True)
-
         if result.returncode != 0:
+            print(result)
             error = f"Execution failed with error: {result.stderr}"
+        print(result.stdout)
 
     except Exception as e:
         print("Found Error While Running")
         error = f"Execution Error : {e}"
+
     return {"error": error}
 
 
