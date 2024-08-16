@@ -1,3 +1,4 @@
+import chainlit as cl
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage, AIMessage
 import subprocess
@@ -9,7 +10,7 @@ from schemas import Code, Codes, GraphState
 from prompts.prompts import CODE_GENERATOR_AGENT_PROMPT, CODE_FIXER_AGENT_PROMPT
 
 
-def code_generator_agent(state: GraphState, llm) -> GraphState:
+async def code_generator_agent(state: GraphState, llm) -> GraphState:
     print("\n**CODE GENERATOR AGENT**")
     print(state)
     structured_llm = llm.with_structured_output(Codes)
@@ -29,9 +30,18 @@ def code_generator_agent(state: GraphState, llm) -> GraphState:
     state["codes"] = generated_code
     state["messages"] += [
         AIMessage(
-            content=f"{generated_code.description} \n {generated_code.codes}"
-        )  # TODO: pitääkö generated_code2.codes for loopata codes läpi? varmaan pitää
+            content=f"{generated_code.description}"
+        ) 
     ]
+    
+    #loop through the codes
+    for code in state["codes"].codes:
+        state["messages"] += [
+        AIMessage(
+            content=f"Description of code: {code.description} \n Programming language used: {code.programming_language} \n {code.code}"
+        )  # TODO: pitääkö generated_code2.codes for loopata codes läpi? varmaan pitää
+        ]
+        await cl.Message(content=code.code, language=code.programming_language).send()
 
     return state
 

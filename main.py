@@ -46,8 +46,8 @@ workflow = StateGraph(GraphState)
 
 
 # generate code from user input
-def create_code_f(state: GraphState):
-    return code_generator_agent(state, llm)
+async def create_code_f(state: GraphState):
+    return await code_generator_agent(state, llm)
 
 
 # save generated code to file
@@ -117,7 +117,7 @@ async def main(message: cl.Message):
     # first invoke should have something to add to the state
 
     try:
-        results = app.invoke(
+        results = await app.ainvoke(
             {
                 "messages": [
                     HumanMessage(
@@ -139,4 +139,4 @@ async def main(message: cl.Message):
     print("nRESULT:")
     print(results)
 
-    await cl.Message("asd").send()
+    await cl.Message(content="done!").send()
