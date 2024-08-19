@@ -6,7 +6,7 @@ This project automates Python code generation, testing, debugging, and execution
 
 1. start venv -> .\.venv\Scripts\activate
 2. install packages -> pip install -r requirements.txt
-3. create .env file with own keys for openai and tavily
+3. create .env file with own keys for openai
    1. OPENAI_API_KEY
 4. create config.ini
    1. [LLM]

@@ -1,4 +1,5 @@
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import SystemMessage
 
 CODE_GENERATOR_AGENT_PROMPT = ChatPromptTemplate.from_template(
     """**Role**: You are a expert software python programmer. You need to develop python code
@@ -28,4 +29,22 @@ CODE_FIXER_AGENT_PROMPT = ChatPromptTemplate.from_template(
 {original_code}
 **Error Message**:
 {error_message}"""
+)
+
+README_DEVELOPER_WRITER_AGENT_PROMPT = ChatPromptTemplate(
+    input_variables=["messages"],
+    messages=[
+        MessagesPlaceholder(variable_name="messages"),
+        SystemMessage(
+            content="""**Role**: You are a technical writer responsible for creating README.md and developer.md files.
+**Task**: As a technical writer, you are required to create a README.md and developer.md file for a software project. 
+The README.md file should provide an overview of the project, installation instructions, usage examples, and other relevant information for users. 
+The developer.md file should contain detailed information about the project structure, code organization, how to run and deploy the project, and other technical details for developers contributing to the project.
+Generate the content for both files based on the project requirements and codebase.
+**Instructions**:
+1. **Understand the Project**: Review the project requirements and codebase to understand the software.
+2. **README.md Creation**: Write a comprehensive README.md file that includes project overview, installation steps, usage examples, and other relevant information.
+3. **developer.md Creation**: Develop a detailed developer.md file that provides information on project structure, code organization, architecture, running and deploying the project, and other technical details."""
+        ),
+    ],
 )

@@ -14,6 +14,7 @@ from agents import (
     write_code_to_file_agent,
     execute_code_agent,
     debug_code_agent,
+    read_me_agent,
 )
 from schemas import GraphState
 
@@ -56,13 +57,17 @@ def write_code_to_file_f(state: GraphState):
 
 
 # execute code from folder
-def execute_code_f(state: GraphState):
-    return execute_code_agent(state, code_file)
+async def execute_code_f(state: GraphState):
+    return await execute_code_agent(state, code_file)
 
 
 # debug codes if error occurs
-def debug_code_f(state: GraphState):
-    return debug_code_agent(state, llm)
+async def debug_code_f(state: GraphState):
+    return await debug_code_agent(state, llm)
+
+# create readme and developer files
+async def read_me_f(state: GraphState):
+    return await read_me_agent(state, llm, code_file)
 
 
 # detirmine if we should end (success) or debug (error)
@@ -75,7 +80,7 @@ def decide_to_end(state: GraphState):
             return "end"
         return "debugger"
     else:
-        return "end"
+        return "readme"
 
 
 # Add the node to the graph.
@@ -84,16 +89,18 @@ workflow.add_node("programmer", create_code_f)
 workflow.add_node("saver", write_code_to_file_f)
 workflow.add_node("executer", execute_code_f)
 workflow.add_node("debugger", debug_code_f)
+workflow.add_node("readme", read_me_f)
 
 # add the edge to the graph
 workflow.add_edge("programmer", "saver")
 workflow.add_edge("saver", "executer")
 workflow.add_edge("debugger", "saver")
+workflow.add_edge("readme", END)
 workflow.add_conditional_edges(
     source="executer",
     path=decide_to_end,
     path_map={
-        "end": END,  # If `decide_to_end` returns "end", transition to END
+        "readme": "readme",  # If `decide_to_end` returns "end", transition to END
         "debugger": "debugger",  # If `decide_to_end` returns "debugger", transition to the debugger node
     },
 )
@@ -105,7 +112,7 @@ workflow.set_entry_point("programmer")
 # Create the app and run it
 app = workflow.compile()
 # create the image of the graph
-# app.get_graph().draw_mermaid_png(output_file_path="images/graphs/graph_flow.png")
+app.get_graph().draw_mermaid_png(output_file_path="images/graphs/graph_flow.png")
 
 
 @cl.on_message  # this function will be called every time a user inputs a message in the UI

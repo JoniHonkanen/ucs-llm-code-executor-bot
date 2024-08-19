@@ -48,6 +48,16 @@ class Codes(BaseModel):
     )
 
 
+class Documentation(BaseModel):
+    """
+    readme.md & developer.md
+    """
+
+    readme: str = Field(description="The readme file")
+    developer: str = Field(description="The developer file")
+
+
+# State of the graph (agents)
 class GraphState(TypedDict):
     """
     Represents the state of our graph.
