@@ -4,6 +4,7 @@ from .agents import (
     execute_code_agent,
     debug_code_agent,
     read_me_agent,
+    dockerizer_agent
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "execute_code_agent",
     "debug_code_agent",
     "read_me_agent",
+    "dockerizer_agent"
 ]

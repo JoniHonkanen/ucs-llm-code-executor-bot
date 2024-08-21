@@ -2,6 +2,7 @@ from typing import List, TypedDict
 from langchain_core.pydantic_v1 import BaseModel, Field, Extra, validator
 
 
+# Schema for single code file
 class Code(BaseModel):
     """
     Represents an individual piece of code generated as part of a programming project.
@@ -28,6 +29,7 @@ class Code(BaseModel):
     )
 
 
+# Schema for whole code project
 class Codes(BaseModel):
     """
     Represents a collection of multiple code files generated as part of a programming project.
@@ -48,6 +50,7 @@ class Codes(BaseModel):
     )
 
 
+# Schema for generated project Readme.md and Developer.md files
 class Documentation(BaseModel):
     """
     readme.md & developer.md
@@ -55,6 +58,38 @@ class Documentation(BaseModel):
 
     readme: str = Field(description="The readme file")
     developer: str = Field(description="The developer file")
+
+
+# Schema for Dockerfile and Docker Compose configuration
+class DockerFile(BaseModel):
+    """
+    Represents the Dockerfile and Docker Compose configuration for a software project.
+    Attributes:
+        description : A detailed description of the Docker setup for the software project.
+        dockerfile : The content of the Dockerfile used to build the Docker image for the project.
+        docker_compose : The content of the Docker Compose configuration file used to manage and orchestrate the Docker services.
+        folder_watching : The configuration or setup for enabling automatic detection of code changes using folder watching.
+    """
+
+    description: str = Field(
+        description=(
+            "A detailed description of the Docker setup for the software project. "
+            "This includes the purpose of using Docker, the configuration options chosen, "
+            "and any additional features or functionalities enabled by Docker."
+        )
+    )
+    dockerfile: str = Field(
+        description="The content of the Dockerfile used to build the Docker image for the project."
+    )
+    docker_compose: str = Field(
+        description="The content of the Docker Compose configuration file used to manage and orchestrate the Docker services."
+    )
+    folder_watching: str = Field(
+        description=(
+            "The configuration or setup for enabling automatic detection of code changes using folder watching. "
+            "This should include any tools or scripts used, as well as the specific folders being monitored."
+        )
+    )
 
 
 # State of the graph (agents)

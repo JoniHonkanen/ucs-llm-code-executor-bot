@@ -15,6 +15,7 @@ from agents import (
     execute_code_agent,
     debug_code_agent,
     read_me_agent,
+    dockerizer_agent
 )
 from schemas import GraphState
 
@@ -69,6 +70,11 @@ async def debug_code_f(state: GraphState):
 async def read_me_f(state: GraphState):
     return await read_me_agent(state, llm, code_file)
 
+# generate dockerfile and docker-compose file
+# TODO:: start docker etc.
+async def dockerize_f(state: GraphState):
+    return await dockerizer_agent(state, llm, code_file)
+
 
 # detirmine if we should end (success) or debug (error)
 def decide_to_end(state: GraphState):
@@ -87,13 +93,15 @@ def decide_to_end(state: GraphState):
 # image from graph flow is saved in images/graphs/graph_flow.png
 workflow.add_node("programmer", create_code_f)
 workflow.add_node("saver", write_code_to_file_f)
+workflow.add_node("dockerizer", dockerize_f)
 workflow.add_node("executer", execute_code_f)
 workflow.add_node("debugger", debug_code_f)
 workflow.add_node("readme", read_me_f)
 
 # add the edge to the graph
 workflow.add_edge("programmer", "saver")
-workflow.add_edge("saver", "executer")
+workflow.add_edge("saver", "dockerizer")
+workflow.add_edge("dockerizer", "executer")
 workflow.add_edge("debugger", "saver")
 workflow.add_edge("readme", END)
 workflow.add_conditional_edges(

@@ -32,9 +32,8 @@ CODE_FIXER_AGENT_PROMPT = ChatPromptTemplate.from_template(
 )
 
 README_DEVELOPER_WRITER_AGENT_PROMPT = ChatPromptTemplate(
-    input_variables=["messages"],
+    input_variables=["messages", "code_descriptions"],
     messages=[
-        MessagesPlaceholder(variable_name="messages"),
         SystemMessage(
             content="""**Role**: You are a technical writer responsible for creating README.md and developer.md files.
 **Task**: As a technical writer, you are required to create a README.md and developer.md file for a software project. 
@@ -43,8 +42,42 @@ The developer.md file should contain detailed information about the project stru
 Generate the content for both files based on the project requirements and codebase.
 **Instructions**:
 1. **Understand the Project**: Review the project requirements and codebase to understand the software.
-2. **README.md Creation**: Write a comprehensive README.md file that includes project overview, installation steps, usage examples, and other relevant information.
-3. **developer.md Creation**: Develop a detailed developer.md file that provides information on project structure, code organization, architecture, running and deploying the project, and other technical details."""
+2. **Code Files**: The following are the code files and their descriptions: {code_descriptions}
+3. **README.md Creation**: Write a comprehensive README.md file that includes project overview, installation steps, usage examples, and other relevant information.
+4. **developer.md Creation**: Develop a detailed developer.md file that provides information on project structure, code organization, architecture, running and deploying the project, and other technical details."""
         ),
+        MessagesPlaceholder(variable_name="messages"),
+    ],
+)
+
+DOCKERFILE_GENERATOR_AGENT_PROMPT = ChatPromptTemplate(
+    input_variables=["messages", "code_descriptions"],
+    messages=[
+        SystemMessage(
+            """**Role**: You are a DevOps engineer responsible for creating a Dockerfile and a Docker Compose configuration for a software project, including handling code changes with folder watching.
+**Task**: As a DevOps engineer, you are required to create a Dockerfile and a Docker Compose file that will be used to build and run a Docker container for the software project. The Docker setup should include all the necessary instructions to set up the environment, install dependencies, and configure the application for development and deployment. Additionally, you must enable automatic detection of code changes using folder watching to restart the container with the updated code.
+**Instructions**:
+1. **Understand the Project**: Review the project requirements and codebase to understand the software’s structure, dependencies, and runtime environment. The following are descriptions of the key code files in the project:
+{code_descriptions}
+2. **Dockerfile Creation**: 
+   - Write a Dockerfile that includes instructions to:
+     - Set up the base image.
+     - Install all necessary dependencies and tools.
+     - Copy the application code into the container.
+     - Specify any environment variables, ports, and entry points required for the application.
+3. **Folder Watching**:
+   - Integrate a mechanism to watch for code changes in the project folder (e.g., using a file-watching tool inside the container) that automatically restarts the application within the container.
+   - Ensure the Docker setup can efficiently handle frequent code changes during development.
+4. **Docker Compose Configuration**:
+   - Write a `docker-compose.yml` file that:
+     - Defines the service using the Dockerfile.
+     - Mounts the project folder as a volume to reflect live code changes.
+     - Configures any networks, environment variables, and dependencies between services.
+     - Includes a `restart` policy for the service to handle crashes and ensure that the container restarts with updated code when changes are detected.
+5. **Test and Validate**: Ensure that the Docker setup can build the image, run the container, and handle code changes automatically with minimal downtime.
+6. **Provide Documentation**: Include comments and instructions in the Dockerfile and `docker-compose.yml` to explain the setup, especially how to use folder watching and restart mechanisms effectively.
+"""
+        ),
+        MessagesPlaceholder(variable_name="messages"),
     ],
 )
