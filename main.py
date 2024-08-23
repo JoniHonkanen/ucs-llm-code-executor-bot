@@ -15,7 +15,8 @@ from agents import (
     execute_code_agent,
     debug_code_agent,
     read_me_agent,
-    dockerizer_agent
+    dockerizer_agent,
+    execute_docker_agent,
 )
 from schemas import GraphState
 
@@ -62,13 +63,20 @@ async def execute_code_f(state: GraphState):
     return await execute_code_agent(state, code_file)
 
 
+# execute docker from folder
+async def execute_docker_f(state: GraphState):
+    return await execute_docker_agent(state, code_file)
+
+
 # debug codes if error occurs
 async def debug_code_f(state: GraphState):
     return await debug_code_agent(state, llm)
 
+
 # create readme and developer files
 async def read_me_f(state: GraphState):
     return await read_me_agent(state, llm, code_file)
+
 
 # generate dockerfile and docker-compose file
 # TODO:: start docker etc.
@@ -80,6 +88,7 @@ async def dockerize_f(state: GraphState):
 def decide_to_end(state: GraphState):
     print(f"Entering in Decide to End")
     print(f"iterations: {state['iterations']}")
+    print(f"error: {state['error']}")
     if state["error"]:
         if state["iterations"] > 2:
             print("\n\n\nToo many iterations!!!!!!!!!\n\n\n")
@@ -94,18 +103,21 @@ def decide_to_end(state: GraphState):
 workflow.add_node("programmer", create_code_f)
 workflow.add_node("saver", write_code_to_file_f)
 workflow.add_node("dockerizer", dockerize_f)
-workflow.add_node("executer", execute_code_f)
+#workflow.add_node("executer", execute_code_f) <- replaced with execute_docker_f
+workflow.add_node("executer_docker", execute_docker_f)
 workflow.add_node("debugger", debug_code_f)
 workflow.add_node("readme", read_me_f)
 
 # add the edge to the graph
 workflow.add_edge("programmer", "saver")
 workflow.add_edge("saver", "dockerizer")
-workflow.add_edge("dockerizer", "executer")
+#workflow.add_edge("dockerizer", "executer")
+workflow.add_edge("dockerizer", "executer_docker")
 workflow.add_edge("debugger", "saver")
 workflow.add_edge("readme", END)
 workflow.add_conditional_edges(
-    source="executer",
+    source="executer_docker",
+    #source="executer",
     path=decide_to_end,
     path_map={
         "readme": "readme",  # If `decide_to_end` returns "end", transition to END

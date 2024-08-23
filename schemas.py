@@ -91,6 +91,21 @@ class DockerFile(BaseModel):
         )
     )
 
+class ErrorMessage(BaseModel):
+    """
+    Represents a structured error message.
+
+    Attributes:
+        type: The type of error (e.g., 'Internal Code Error', 'Dependency Error', 'Execution Error').
+        message: A descriptive error message.
+        details:  detailed information or stack trace related to the error.
+        code_reference:  reference to the part of the code where the error occurred (e.g., filename, function name, line number).
+    """
+
+    type: str
+    message: str
+    details: str
+    code_reference: str
 
 # State of the graph (agents)
 class GraphState(TypedDict):
@@ -104,7 +119,7 @@ class GraphState(TypedDict):
         iterations : Number of tries
     """
 
-    error: str
+    error: ErrorMessage
     messages: List
     codes: Codes
     executable_file_name: str

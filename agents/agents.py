@@ -1,4 +1,5 @@
 from typing import List
+import asyncio
 import chainlit as cl
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage, AIMessage
@@ -7,7 +8,7 @@ import shlex
 import os
 
 # own imports
-from schemas import Code, Codes, GraphState, Documentation, DockerFile
+from schemas import Code, Codes, ErrorMessage, GraphState, Documentation, DockerFile
 from prompts.prompts import (
     CODE_GENERATOR_AGENT_PROMPT,
     CODE_FIXER_AGENT_PROMPT,
@@ -19,7 +20,7 @@ from prompts.prompts import (
 # Generate code from user input
 async def code_generator_agent(state: GraphState, llm) -> GraphState:
     print("\n**CODE GENERATOR AGENT**")
-    print(state)
+    # print(state)
     structured_llm = llm.with_structured_output(Codes)
 
     # get first message from state
@@ -42,7 +43,7 @@ async def code_generator_agent(state: GraphState, llm) -> GraphState:
         state["messages"] += [
             AIMessage(
                 content=f"Description of code: {code.description} \n Programming language used: {code.programming_language} \n {code.code}"
-            )  # TODO: pitääkö generated_code2.codes for loopata codes läpi? varmaan pitää
+            )
         ]
         await cl.Message(content=code.code, language=code.programming_language).send()
 
@@ -52,22 +53,33 @@ async def code_generator_agent(state: GraphState, llm) -> GraphState:
 # Save generated code to file
 def write_code_to_file_agent(state: GraphState, code_file):
     print("\n**WRITE CODE TO FILE**")
-    print(state)
+    # print(state)
 
-    # loop through the codes and write them to file
+    # Loop through the codes and write them to file
     for code in state["codes"].codes:
         if code.executable_code:
             state["executable_file_name"] = code.filename
+
+        # Construct the full file path
+        full_file_path = os.path.join(code_file, code.filename)
+
+        # Ensure the directory exists
+        directory = os.path.dirname(full_file_path)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        # Write the formatted code to the file
         formatted_code = code.code.replace("\\n", "\n")
-        with open(code_file + code.filename, "w") as f:
+        with open(full_file_path, "w") as f:
             f.write(formatted_code)
+
     return state
 
 
 # Execute code from folder (will be replaced with dockerizer agent?)
 async def execute_code_agent(state: GraphState, code_file):
     print("\n**EXECUTE CODE**")
-    print(state)
+    # print(state)
 
     error = None
     try:
@@ -100,7 +112,7 @@ async def execute_code_agent(state: GraphState, code_file):
 # Debug codes if error occurs
 async def debug_code_agent(state: GraphState, llm):
     print("\n **DEBUG CODE**")
-    print(state)
+    # print(state)
     error = state["error"]
     code = state["codes"].codes
     structured_llm = llm.with_structured_output(Codes)
@@ -151,7 +163,7 @@ def generate_code_descriptions(codes: List[Code]) -> str:
 # Create readme and developer files
 async def read_me_agent(state: GraphState, llm, code_file):
     print("\n **GENERATING README & DEVELOPER FILES **")
-    print(state)
+    # print(state)
 
     structured_llm = llm.with_structured_output(Documentation)
     code_descriptions = generate_code_descriptions(state["codes"].codes)
@@ -173,20 +185,88 @@ async def read_me_agent(state: GraphState, llm, code_file):
 # Dockerizer the project
 async def dockerizer_agent(state: GraphState, llm, file_path):
     print("\n **DOCKERIZER AGENT **")
-    print(state)
+    # print(state)
     structured_llm = llm.with_structured_output(DockerFile)
     code_descriptions = generate_code_descriptions(state["codes"].codes)
+
     prompt = DOCKERFILE_GENERATOR_AGENT_PROMPT.format(
-        messages=state["messages"], code_descriptions=code_descriptions
+        messages=state["messages"],
+        code_descriptions=code_descriptions,
+        executable_file_name=state["executable_file_name"],
+        file_path=file_path,
     )
     docker_things = structured_llm.invoke(prompt)
-    print("\n description: " + docker_things.description)
-    print("\n dockerfile: " + docker_things.dockerfile)
-    print("\n docker_compose: " + docker_things.docker_compose)
-    print("\nfolder_watching: " + docker_things.folder_watching)
+
+    # Update the message state with the generated Dockerfile and Docker Compose configuration
+    state["messages"] += [
+        AIMessage(content=f"Description of dockerfile: {docker_things.description}"),
+        AIMessage(content=f"Dockerfile: {docker_things.dockerfile}"),
+        AIMessage(content=f"Docker.yaml: {docker_things.docker_compose}"),
+    ]
     # save files using file_path
     with open(file_path + "Dockerfile", "w", encoding="utf-8") as f:
         f.write(docker_things.dockerfile)
     with open(file_path + "docker-compose.yml", "w", encoding="utf-8") as f:
         f.write(docker_things.docker_compose)
+
     return state
+
+
+async def execute_docker_agent(state: GraphState, file_path: str):
+    print("\n **EXECUTE DOCKER AGENT **")
+    # print(state)
+    error = None
+    try:
+        # Using asyncio to run subprocess asynchronously
+        process = await asyncio.create_subprocess_exec(
+            "docker-compose",
+            "-f",
+            f"{file_path}/docker-compose.yml",
+            "up",
+            "--build",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+
+        # Wait for the process to complete
+        stdout, stderr = await process.communicate()
+
+        # Decode output and errors
+        stdout_decoded = stdout.decode()
+        stderr_decoded = stderr.decode()
+
+        if stdout_decoded:
+            print("Standard Output:\n", stdout_decoded)
+        if stderr_decoded:
+            print("Standard Error:\n", stderr_decoded)
+
+        # Check the return code to determine if an error occurred
+        if process.returncode != 0:
+            error = ErrorMessage(
+                type="Execution Error",
+                message=f"Execution failed with return code {process.returncode}.",
+                details=stderr_decoded.strip(),
+                code_reference=f"{file_path}/docker-compose.yml",
+            )
+        elif stderr_decoded:
+            # Treat any stderr output, even with a zero return code, as a warning or error
+            error = ErrorMessage(
+                type="Execution Warning",
+                message="Execution completed with warnings or errors.",
+                details=stderr_decoded.strip(),
+                code_reference=f"{file_path}/docker-compose.yml",
+            )
+
+    except Exception as e:
+        error = ErrorMessage(
+            type="Unexpected Error",
+            message="An unexpected error occurred during execution.",
+            details=str(e),
+            code_reference="execute_docker_agent",
+        )
+        print(error.json())
+
+    if error:
+        await cl.Message(content=error.json()).send()
+
+    return {"error": error}
