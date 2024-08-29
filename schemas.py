@@ -1,4 +1,4 @@
-from typing import List, TypedDict
+from typing import List, TypedDict, Optional
 from langchain_core.pydantic_v1 import BaseModel, Field, Extra, validator
 
 
@@ -91,21 +91,23 @@ class DockerFile(BaseModel):
         )
     )
 
+
 class ErrorMessage(BaseModel):
     """
     Represents a structured error message.
 
     Attributes:
         type: The type of error (e.g., 'Internal Code Error', 'Dependency Error', 'Execution Error').
-        message: A descriptive error message.
         details:  detailed information or stack trace related to the error.
         code_reference:  reference to the part of the code where the error occurred (e.g., filename, function name, line number).
     """
 
     type: str
-    message: str
     details: str
-    code_reference: str
+    file: Optional[str] = None
+    line: Optional[int] = None
+    code_reference: Optional[str] = None
+
 
 # State of the graph (agents)
 class GraphState(TypedDict):

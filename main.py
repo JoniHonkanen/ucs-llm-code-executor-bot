@@ -34,8 +34,8 @@ async def on_chat_start():
 
 # Define the paths.
 search_path = os.path.join(os.getcwd(), "generated")
-code_file = os.path.join(search_path, "src/")
-test_file = os.path.join(search_path, "test/test_program.py")
+code_file = os.path.join(search_path, "src")
+test_file = os.path.join(search_path, "test")
 
 # Create the folders and files if necessary.
 if not os.path.exists(search_path):
@@ -90,7 +90,7 @@ def decide_to_end(state: GraphState):
     print(f"iterations: {state['iterations']}")
     print(f"error: {state['error']}")
     if state["error"]:
-        if state["iterations"] > 2:
+        if state["iterations"] >= 0:
             print("\n\n\nToo many iterations!!!!!!!!!\n\n\n")
             return "end"
         return "debugger"
@@ -103,7 +103,7 @@ def decide_to_end(state: GraphState):
 workflow.add_node("programmer", create_code_f)
 workflow.add_node("saver", write_code_to_file_f)
 workflow.add_node("dockerizer", dockerize_f)
-#workflow.add_node("executer", execute_code_f) <- replaced with execute_docker_f
+# workflow.add_node("executer", execute_code_f) <- replaced with execute_docker_f
 workflow.add_node("executer_docker", execute_docker_f)
 workflow.add_node("debugger", debug_code_f)
 workflow.add_node("readme", read_me_f)
@@ -111,13 +111,13 @@ workflow.add_node("readme", read_me_f)
 # add the edge to the graph
 workflow.add_edge("programmer", "saver")
 workflow.add_edge("saver", "dockerizer")
-#workflow.add_edge("dockerizer", "executer")
+# workflow.add_edge("dockerizer", "executer")
 workflow.add_edge("dockerizer", "executer_docker")
 workflow.add_edge("debugger", "saver")
 workflow.add_edge("readme", END)
 workflow.add_conditional_edges(
     source="executer_docker",
-    #source="executer",
+    # source="executer",
     path=decide_to_end,
     path_map={
         "readme": "readme",  # If `decide_to_end` returns "end", transition to END
@@ -163,7 +163,5 @@ async def main(message: cl.Message):
         )
     except GraphRecursionError as e:
         print(f"GraphRecursionError: {e}")
-    print("nRESULT:")
-    print(results)
 
     await cl.Message(content="done!").send()

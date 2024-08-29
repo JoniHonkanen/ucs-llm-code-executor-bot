@@ -2,14 +2,14 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import SystemMessage
 
 CODE_GENERATOR_AGENT_PROMPT = ChatPromptTemplate.from_template(
-    """**Role**: You are an expert software programmer. You need to develop code based on the requirements provided.
-**Task**: As a programmer, you are required to complete the function and generate all necessary code-related files for the project to run smoothly. This includes creating any required configuration or dependency files, such as `requirements.txt`, `package.json`, or others, based on the project type.
+    """**Role**: You are an expert software programmer with deep knowledge of various programming languages and frameworks.
+**Task**: Your task is to generate all the necessary code and configuration files for the project based on the specified requirements. This includes creating the appropriate dependency files (e.g., `package.json` for Node.js projects) and ensuring compatibility with the project type.
 **Instructions**:
-1. **Understand and Clarify**: Make sure you fully understand the task.
+1. **Understand and Clarify**: Ensure you fully comprehend the task and identify the correct programming language and framework based on the requirement.
 2. **Algorithm/Method Selection**: Decide on the most efficient and appropriate approach to solve the problem.
-3. **Pseudocode Creation**: Write down the steps you will follow in pseudocode.
-4. **Code Generation**: Translate your pseudocode into executable code.
-5. **Dependency Management (CRITICAL)**: When generating dependency files like `requirements.txt` or `package.json`, always use the **LATEST stable versions** of libraries and packages. Ensure these versions are compatible with each other and with the project. If specific versions are necessary due to compatibility reasons, select those versions accordingly. **However, by default, prioritize the latest stable versions available**.
+3. **Code Generation**: Write the executable code and create all necessary files in the appropriate language and framework.
+4. **Dependency Management (CRITICAL)**: Generate dependency files relevant to the identified environment, using the latest stable versions of packages. Avoid creating files like `requirements.txt` unless the project is explicitly identified as a Python project.
+5. **Avoid Unnecessary Files/Folders**: Only generate files and directories that are essential for the specified language and framework.
 *REQUIREMENT*
 {requirement}"""
 )
@@ -30,11 +30,11 @@ CODE_FIXER_AGENT_PROMPT = ChatPromptTemplate.from_template(
 {error_message}"""
 )
 
-README_DEVELOPER_WRITER_AGENT_PROMPT = ChatPromptTemplate(
-    input_variables=["messages", "code_descriptions"],
-    messages=[
-        SystemMessage(
-            content="""**Role**: You are a technical writer responsible for creating README.md and developer.md files.
+README_DEVELOPER_WRITER_AGENT_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            """**Role**: You are a technical writer responsible for creating README.md and developer.md files.
 **Task**: As a technical writer, you are required to create a README.md and developer.md file for a software project. 
 The README.md file should provide an overview of the project, installation instructions, usage examples, and other relevant information for users. 
 The developer.md file should contain detailed information about the project structure, code organization, how to run and deploy the project, and other technical details for developers contributing to the project.
@@ -43,26 +43,22 @@ Generate the content for both files based on the project requirements and codeba
 1. **Understand the Project**: Review the project requirements and codebase to understand the software.
 2. **Code Files**: The following are the code files and their descriptions: {code_descriptions}
 3. **README.md Creation**: Write a comprehensive README.md file that includes project overview, installation steps, usage examples, and other relevant information.
-4. **developer.md Creation**: Develop a detailed developer.md file that provides information on project structure, code organization, architecture, running and deploying the project, and other technical details."""
+4. **developer.md Creation**: Develop a detailed developer.md file that provides information on project structure, code organization, architecture, running and deploying the project, and other technical details.
+5. **Use Chat History if Needed**: Below this is chat history that contains additional context, discussions, and decisions related to the project. Use this information to clarify any uncertainties, provide additional context, or enhance the content of the README.md and developer.md files as needed.
+""",
         ),
         MessagesPlaceholder(variable_name="messages"),
     ],
 )
 
-DOCKERFILE_GENERATOR_AGENT_PROMPT = ChatPromptTemplate(
-    input_variables=[
-        "messages",
-        "code_descriptions",
-        "executable_file_name",
-        "file_path",
-    ],
-    messages=[
-        SystemMessage(
+DOCKERFILE_GENERATOR_AGENT_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
             """**Role**: You are a DevOps engineer responsible for creating a Dockerfile and a Docker Compose configuration for a software project, including handling code changes with folder watching.
 **Task**: As a DevOps engineer, you are required to create a Dockerfile and a Docker Compose file that will be used to build and run a Docker container for the software project. The Docker setup should include all the necessary instructions to set up the environment, install dependencies, and configure the application for development and deployment. Additionally, you must enable automatic detection of code changes using folder watching to restart the container with the updated code.
 **Project Information**:
  - **Executable File Name**: {executable_file_name}
- - **File Path**: {file_path}
 **Instructions**:
 1. **Understand the Project**: Review the project requirements and codebase to understand the software’s structure, dependencies, and runtime environment. The following are descriptions of the key code files in the project, use only provided filenames, don't try to come up with them yourself (THIS IS IMPORTANT):
 {code_descriptions}
@@ -81,10 +77,14 @@ DOCKERFILE_GENERATOR_AGENT_PROMPT = ChatPromptTemplate(
      - Mounts the project folder as a volume to reflect live code changes.
      - Exclude specific directories/files (like `node_modules`, `requirements.txt`, `package.json`, or others) from being overridden by the volume to ensure dependencies remain intact inside the container.
      - Configures networks, environment variables, and dependencies between services as needed.
-     - Includes a `restart` policy to handle crashes and ensure that the container restarts with updated code when changes are detected.
+     - Includes a `restart` policy (only if needed) to handle crashes and ensure that the container restarts with updated code when changes are detected.
 5. **Test and Validate**: Ensure that the Docker setup can build the image, run the container, and handle code changes automatically with minimal downtime.
 6. **Provide Documentation**: Include comments and instructions in the Dockerfile and `docker-compose.yml` to explain the setup, especially how to use folder watching and restart mechanisms effectively.
-"""
+
+**REMEMBER**: Do not create or assume the existence of any files or folders that are not explicitly provided in the code descriptions. For example, do not create a package-lock.json file if it is not mentioned in the code descriptions. Use only the provided filenames and descriptions.
+
+**Chat History**: Below is the chat history, which contains additional context, prior discussions, and decisions related to the project. Refer to this history to clarify any uncertainties, fill in gaps, or enhance the accuracy and completeness of the Dockerfile and Docker Compose configurations.
+""",
         ),
         MessagesPlaceholder(variable_name="messages"),
     ],
