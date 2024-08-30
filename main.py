@@ -86,11 +86,21 @@ async def dockerize_f(state: GraphState):
 
 # detirmine if we should end (success) or debug (error)
 def decide_to_end(state: GraphState):
-    print(f"Entering in Decide to End")
+    print(f"\nEntering in Decide to End")
     print(f"iterations: {state['iterations']}")
     print(f"error: {state['error']}")
-    if state["error"]:
-        if state["iterations"] >= 0:
+
+    error_message = state.get("error")
+
+    if error_message:
+        # check if error is really a warning
+        if isinstance(error_message, str) and "warning" in error_message.lower():
+            return "readme"
+
+        print("Päätetään mikä debuggaus tehdään")
+        if (
+            state["iterations"] >= 0
+        ):  # This condition seems redundant; should it be > 0?
             print("\n\n\nToo many iterations!!!!!!!!!\n\n\n")
             return "end"
         return "debugger"

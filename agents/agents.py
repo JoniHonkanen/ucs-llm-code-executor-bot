@@ -196,10 +196,12 @@ async def dockerizer_agent(state: GraphState, llm, file_path):
     code_descriptions = generate_code_descriptions(state["codes"].codes)
 
     prompt = DOCKERFILE_GENERATOR_AGENT_PROMPT.format(
-        messages=state["messages"],
-        code_descriptions=code_descriptions,
         executable_file_name=state["executable_file_name"],
+        code_descriptions=code_descriptions,
+        messages=state["messages"],
     )
+
+    print(prompt)
 
     docker_things = structured_llm.invoke(prompt)
 
@@ -292,8 +294,17 @@ async def execute_docker_agent(state: GraphState, file_path: str):
         # Catch any remaining Docker-related errors not previously handled
         if process.returncode != 0 and not error:
             error = ErrorMessage(
-                type="Docker Error",
-                details="\n".join(output_lines),
+                type="Docker error Error",
+                message=f"Execution failed with return code {process.returncode}.",
+                details=stderr_decoded.strip(),
+                code_reference=f"{file_path}/docker-compose.yml",
+            )
+        elif stderr_decoded:
+            # Treat any stderr output, even with a zero return code, as a warning or error
+            error = ErrorMessage(
+                type="Execution Warning",
+                message="Execution completed with warnings or errors.",
+                details=stderr_decoded.strip(),
                 code_reference=f"{file_path}/docker-compose.yml",
             )
             print("Docker execution failed with critical errors.")
