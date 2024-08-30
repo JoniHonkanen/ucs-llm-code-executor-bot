@@ -226,73 +226,35 @@ async def dockerizer_agent(state: GraphState, llm, file_path):
 
 
 async def execute_docker_agent(state: GraphState, file_path: str):
-    print("**\nEXECUTE DOCKER AGENT**")
+    print("\n **EXECUTE DOCKER AGENT **")
+    # print(state)
     error = None
-    output_lines = []
-
-    # Regular expression to match Python errors in logs
-    traceback_pattern = re.compile(r'File "(?P<file>.+)", line (?P<line>\d+), in .+')
-
-    # Regular expression to capture generic error messages in logs
-    generic_error_pattern = re.compile(
-        r"(?P<file>[^ ]+):(?P<line>\d+): (?P<error>.+)", re.IGNORECASE
-    )
-
     try:
-        # Start Docker process with subprocess
+        # Using asyncio to run subprocess asynchronously
         process = await asyncio.create_subprocess_exec(
             "docker-compose",
             "-f",
-            os.path.join(file_path, "docker-compose.yml"),
+            f"{file_path}/docker-compose.yml",
             "up",
             "--build",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
 
-        print("Docker process started successfully.")
+        # Wait for the process to complete
+        stdout, stderr = await process.communicate()
 
-        while True:
-            stdout_line = await process.stdout.readline()
-            stderr_line = await process.stderr.readline()
+        # Decode output and errors
+        stdout_decoded = stdout.decode()
+        stderr_decoded = stderr.decode()
 
-            if not stdout_line and not stderr_line:
-                break
+        if stdout_decoded:
+            print("Standard Output:\n", stdout_decoded)
+        if stderr_decoded:
+            print("Standard Error:\n", stderr_decoded)
 
-            for line in [stdout_line, stderr_line]:
-                if line:
-                    decoded_line = line.decode().strip()
-                    output_lines.append(decoded_line)
-                    print(decoded_line)
-
-                    # Check for error indications
-                    if "error" in decoded_line.lower():
-                        # Attempt to match a more structured error pattern
-                        match = generic_error_pattern.search(
-                            decoded_line
-                        ) or traceback_pattern.search(decoded_line)
-                        file = match.group("file") if match else None
-                        line_number = int(match.group("line")) if match else None
-                        code_reference = (
-                            f"{file}:{line_number}"
-                            if file and line_number
-                            else f"{file_path}/docker-compose.yml"
-                        )
-
-                        error = ErrorMessage(
-                            type="Execution Error",
-                            details=decoded_line,
-                            file=file,
-                            line=line_number,
-                            code_reference=code_reference,
-                        )
-
-                        output_lines.append(decoded_line)
-
-        await process.wait()
-
-        # Catch any remaining Docker-related errors not previously handled
-        if process.returncode != 0 and not error:
+        # Check the return code to determine if an error occurred
+        if process.returncode != 0:
             error = ErrorMessage(
                 type="Docker error Error",
                 message=f"Execution failed with return code {process.returncode}.",
@@ -307,20 +269,17 @@ async def execute_docker_agent(state: GraphState, file_path: str):
                 details=stderr_decoded.strip(),
                 code_reference=f"{file_path}/docker-compose.yml",
             )
-            print("Docker execution failed with critical errors.")
 
     except Exception as e:
-        # Handle unexpected errors in the execution flow
         error = ErrorMessage(
             type="Unexpected Error",
+            message="An unexpected error occurred during execution.",
             details=str(e),
             code_reference="execute_docker_agent",
         )
-        print("An unexpected error occurred during Docker execution:", e)
+        print(error.json())
 
-    # Send the error message if any error was captured
     if error:
         await cl.Message(content=error.json()).send()
 
-    print("\n\n*****ERROR:", error)
     return {"error": error}
