@@ -190,11 +190,13 @@ async def dockerizer_agent(state: GraphState, llm, file_path):
     code_descriptions = generate_code_descriptions(state["codes"].codes)
 
     prompt = DOCKERFILE_GENERATOR_AGENT_PROMPT.format(
-        messages=state["messages"],
-        code_descriptions=code_descriptions,
         executable_file_name=state["executable_file_name"],
-        file_path=file_path,
+        code_descriptions=code_descriptions,
+        messages=state["messages"],
     )
+
+    print(prompt)
+
     docker_things = structured_llm.invoke(prompt)
 
     # Update the message state with the generated Dockerfile and Docker Compose configuration
@@ -243,7 +245,7 @@ async def execute_docker_agent(state: GraphState, file_path: str):
         # Check the return code to determine if an error occurred
         if process.returncode != 0:
             error = ErrorMessage(
-                type="Execution Error",
+                type="Docker error Error",
                 message=f"Execution failed with return code {process.returncode}.",
                 details=stderr_decoded.strip(),
                 code_reference=f"{file_path}/docker-compose.yml",

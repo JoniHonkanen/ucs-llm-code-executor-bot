@@ -86,11 +86,21 @@ async def dockerize_f(state: GraphState):
 
 # detirmine if we should end (success) or debug (error)
 def decide_to_end(state: GraphState):
-    print(f"Entering in Decide to End")
+    print(f"\nEntering in Decide to End")
     print(f"iterations: {state['iterations']}")
     print(f"error: {state['error']}")
-    if state["error"]:
-        if state["iterations"] > 2:
+
+    error_message = state.get("error")
+
+    if error_message:
+        # check if error is really a warning
+        if isinstance(error_message, str) and "warning" in error_message.lower():
+            return "readme"
+
+        print("Päätetään mikä debuggaus tehdään")
+        if (
+            state["iterations"] >= 0
+        ):  # This condition seems redundant; should it be > 0?
             print("\n\n\nToo many iterations!!!!!!!!!\n\n\n")
             return "end"
         return "debugger"
@@ -103,7 +113,7 @@ def decide_to_end(state: GraphState):
 workflow.add_node("programmer", create_code_f)
 workflow.add_node("saver", write_code_to_file_f)
 workflow.add_node("dockerizer", dockerize_f)
-#workflow.add_node("executer", execute_code_f) <- replaced with execute_docker_f
+# workflow.add_node("executer", execute_code_f) <- replaced with execute_docker_f
 workflow.add_node("executer_docker", execute_docker_f)
 workflow.add_node("debugger", debug_code_f)
 workflow.add_node("readme", read_me_f)
@@ -111,13 +121,13 @@ workflow.add_node("readme", read_me_f)
 # add the edge to the graph
 workflow.add_edge("programmer", "saver")
 workflow.add_edge("saver", "dockerizer")
-#workflow.add_edge("dockerizer", "executer")
+# workflow.add_edge("dockerizer", "executer")
 workflow.add_edge("dockerizer", "executer_docker")
 workflow.add_edge("debugger", "saver")
 workflow.add_edge("readme", END)
 workflow.add_conditional_edges(
     source="executer_docker",
-    #source="executer",
+    # source="executer",
     path=decide_to_end,
     path_map={
         "readme": "readme",  # If `decide_to_end` returns "end", transition to END

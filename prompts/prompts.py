@@ -9,7 +9,8 @@ CODE_GENERATOR_AGENT_PROMPT = ChatPromptTemplate.from_template(
 2. **Algorithm/Method Selection**: Decide on the most efficient and appropriate approach to solve the problem.
 3. **Pseudocode Creation**: Write down the steps you will follow in pseudocode.
 4. **Code Generation**: Translate your pseudocode into executable code.
-5. **Dependency Management (CRITICAL)**: When generating dependency files like `requirements.txt` or `package.json`, always use the **LATEST stable versions** of libraries and packages. Ensure these versions are compatible with each other and with the project. If specific versions are necessary due to compatibility reasons, select those versions accordingly. **However, by default, prioritize the latest stable versions available**.
+5. **Dependency Management (CRITICAL)**: When generating dependency files like `requirements.txt` or `package.json`, only include the necessary libraries and packages that are directly required by the project. **If no dependencies are needed, do not create these files.** Ensure these files are not empty and contain only the relevant dependencies.
+6. **File Creation**: Only generate files/folders that are absolutely necessary for the project. **Do not create any empty files or folders. If a file, such as `requirements.txt` or `package.json`, is not needed or does not require content, do not generate it.** Ensure that all generated files contain relevant and required content based on the project's needs.
 *REQUIREMENT*
 {requirement}"""
 )
@@ -31,10 +32,10 @@ CODE_FIXER_AGENT_PROMPT = ChatPromptTemplate.from_template(
 )
 
 README_DEVELOPER_WRITER_AGENT_PROMPT = ChatPromptTemplate(
-    input_variables=["messages", "code_descriptions"],
-    messages=[
-        SystemMessage(
-            content="""**Role**: You are a technical writer responsible for creating README.md and developer.md files.
+    [
+        (
+            "system",
+            """**Role**: You are a technical writer responsible for creating README.md and developer.md files.
 **Task**: As a technical writer, you are required to create a README.md and developer.md file for a software project. 
 The README.md file should provide an overview of the project, installation instructions, usage examples, and other relevant information for users. 
 The developer.md file should contain detailed information about the project structure, code organization, how to run and deploy the project, and other technical details for developers contributing to the project.
@@ -43,48 +44,46 @@ Generate the content for both files based on the project requirements and codeba
 1. **Understand the Project**: Review the project requirements and codebase to understand the software.
 2. **Code Files**: The following are the code files and their descriptions: {code_descriptions}
 3. **README.md Creation**: Write a comprehensive README.md file that includes project overview, installation steps, usage examples, and other relevant information.
-4. **developer.md Creation**: Develop a detailed developer.md file that provides information on project structure, code organization, architecture, running and deploying the project, and other technical details."""
+4. **developer.md Creation**: Develop a detailed developer.md file that provides information on project structure, code organization, architecture, running and deploying the project, and other technical details.""",
         ),
         MessagesPlaceholder(variable_name="messages"),
     ],
 )
-
-DOCKERFILE_GENERATOR_AGENT_PROMPT = ChatPromptTemplate(
-    input_variables=[
-        "messages",
-        "code_descriptions",
-        "executable_file_name",
-        "file_path",
-    ],
-    messages=[
-        SystemMessage(
+DOCKERFILE_GENERATOR_AGENT_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
             """**Role**: You are a DevOps engineer responsible for creating a Dockerfile and a Docker Compose configuration for a software project, including handling code changes with folder watching.
 **Task**: As a DevOps engineer, you are required to create a Dockerfile and a Docker Compose file that will be used to build and run a Docker container for the software project. The Docker setup should include all the necessary instructions to set up the environment, install dependencies, and configure the application for development and deployment. Additionally, you must enable automatic detection of code changes using folder watching to restart the container with the updated code.
 **Project Information**:
  - **Executable File Name**: {executable_file_name}
- - **File Path**: {file_path}
 **Instructions**:
-1. **Understand the Project**: Review the project requirements and codebase to understand the software’s structure, dependencies, and runtime environment. The following are descriptions of the key code files in the project, use only provided filenames, don't try to come up with them yourself (THIS IS IMPORTANT):
+1. **Understand the Project**: Review the project requirements and codebase to understand the software’s structure, dependencies, and runtime environment. The following are descriptions of the key code files in the project. Use only the provided filenames and do not create or assume the existence of any files that are not explicitly listed (THIS IS IMPORTANT):
 {code_descriptions}
 2. **Dockerfile Creation**:
    - Write a Dockerfile that:
-     - Sets up the base image appropriate for the project's environment.
-     - Installs all necessary dependencies using the appropriate package manager or installation command. This includes installing from dependency files (e.g., `requirements.txt`, `package.json`, or any other dependency management files) or directly from source.
-     - Copies the application files and directories into the container using their correct paths.
-     - Specifies any required environment variables, ports, and entry points.
-     - Ensures that the Dockerfile reflects the actual structure of the project.
+     - Selects an appropriate base image for the project's programming language and runtime environment.
+     - Installs only the necessary dependencies listed in the provided dependency management files (e.g., `requirements.txt`, `package.json`). If these files are not provided, infer the minimal necessary dependencies from the code descriptions and ensure that only those are installed.
+     - Copies only the files and directories explicitly mentioned in the code descriptions into the container using their correct paths.
+     - Specifies any required environment variables, exposed ports, and entry points based on the executable file and its runtime requirements.
+     - Ensures that the Dockerfile accurately reflects the actual project structure without making assumptions about non-existent files or dependencies.
 3. **Folder Watching and Live Reloading**:
-   - Integrate a mechanism to watch for code changes in the project folder that automatically restarts the application within the container when changes are detected. Use appropriate tools or commands to ensure efficient handling of code changes during development.
+   - Implement a mechanism using an appropriate tool or command that watches for code changes in the specified project files and automatically restarts the application within the container when changes are detected.
+   - Choose a method that works efficiently within the project's runtime environment and aligns with the project's programming language.
 4. **Docker Compose Configuration**:
-   - Write a `docker-compose.yml` file that:
-     - Defines the service using the Dockerfile.
-     - Mounts the project folder as a volume to reflect live code changes.
-     - Exclude specific directories/files (like `node_modules`, `requirements.txt`, `package.json`, or others) from being overridden by the volume to ensure dependencies remain intact inside the container.
-     - Configures networks, environment variables, and dependencies between services as needed.
-     - Includes a `restart` policy to handle crashes and ensure that the container restarts with updated code when changes are detected.
-5. **Test and Validate**: Ensure that the Docker setup can build the image, run the container, and handle code changes automatically with minimal downtime.
-6. **Provide Documentation**: Include comments and instructions in the Dockerfile and `docker-compose.yml` to explain the setup, especially how to use folder watching and restart mechanisms effectively.
-"""
+   - Create a `docker-compose.yml` file that:
+     - Defines the service using the Dockerfile created.
+     - Mounts only the necessary project files and directories as volumes, based on the provided code descriptions, to allow for live code changes.
+     - Excludes specific directories/files (e.g., dependency directories like `node_modules` or files like `requirements.txt`) from being overridden by the volume, ensuring dependencies remain intact inside the container.
+     - Configures networks, environment variables, and service dependencies if required by the project, using only the files and settings described in the code descriptions.
+     - **Determine the appropriate restart policy**:
+       - If the code is intended to run as a server or long-running service, set the `restart` policy to automatically restart on failure (`restart: always` or `restart: on-failure`).
+       - If the code is intended to be a one-time execution or a batch job, do not set an automatic restart policy.
+5. **Test and Validate**: Ensure that the Docker setup can successfully build the image, run the container, and handle code changes automatically with minimal downtime.
+6. **Provide Documentation**: Include clear comments and instructions in the Dockerfile and `docker-compose.yml` to explain the setup, particularly how to use the folder watching and restart mechanisms effectively.
+
+***Note: Below is the chat history from the first message to the last message. Use this context to better understand the requirements and create a more accurate and tailored solution.***
+""",
         ),
         MessagesPlaceholder(variable_name="messages"),
     ],
