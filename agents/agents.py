@@ -201,8 +201,6 @@ async def dockerizer_agent(state: GraphState, llm, file_path):
         messages=state["messages"],
     )
 
-    print(prompt)
-
     docker_things = structured_llm.invoke(prompt)
 
     # Update the message state with the generated Dockerfile and Docker Compose configuration
@@ -215,6 +213,8 @@ async def dockerizer_agent(state: GraphState, llm, file_path):
     # Use os.path.join to construct full file paths
     dockerfile_path = os.path.join(file_path, "Dockerfile")
     docker_compose_path = os.path.join(file_path, "docker-compose.yml")
+
+    print("\nPUUTTHUU: ", docker_things.missing_packages)
 
     # Save files using the constructed paths
     with open(dockerfile_path, "w", encoding="utf-8") as f:

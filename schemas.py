@@ -90,6 +90,9 @@ class DockerFile(BaseModel):
             "This should include any tools or scripts used, as well as the specific folders being monitored."
         )
     )
+    missing_packages: List[str] = Field(
+        description="List of missing packages that need to be installed so program will run as wanted.",
+    )
 
 
 class ErrorMessage(BaseModel):

@@ -58,14 +58,15 @@ DOCKERFILE_GENERATOR_AGENT_PROMPT = ChatPromptTemplate.from_messages(
 **Project Information**:
  - **Executable File Name**: {executable_file_name}
 **Instructions**:
-1. **Understand the Project**: Review the project requirements and codebase to understand the software’s structure, dependencies, and runtime environment. The following are descriptions of the key code files in the project. Use only the provided filenames and do not create or assume the existence of any files that are not explicitly listed (THIS IS IMPORTANT):
+1. **Understand the Project**: Review the project requirements and codebase to thoroughly understand the software’s structure, dependencies, and runtime environment. The following are descriptions of the key code files in the project. **It is crucial to use only the provided filenames and paths** as described. **Do not create, reference, or assume the existence of any files, directories, or dependencies that are not explicitly listed** (THIS IS IMPORTANT). Your Dockerfile and Docker Compose configuration should accurately reflect the actual project structure based on this information.
 {code_descriptions}
 2. **Dockerfile Creation**:
    - Write a Dockerfile that:
      - Selects an appropriate base image for the project's programming language and runtime environment.
-     - Installs only the necessary dependencies listed in the provided dependency management files (e.g., `requirements.txt`, `package.json`). If these files are not provided, infer the minimal necessary dependencies from the code descriptions and ensure that only those are installed.
+     - **Installs all necessary dependencies**, including those required for folder watching and live reloading (e.g., `watchdog` for Python projects), using the appropriate package manager (e.g., pip for Python). If these dependencies are not listed in a dependency management file (e.g., `requirements.txt`), ensure they are explicitly installed within the Dockerfile.
      - Copies only the files and directories explicitly mentioned in the code descriptions into the container using their correct paths.
      - Specifies any required environment variables, exposed ports, and entry points based on the executable file and its runtime requirements.
+     - **Double-checks the `CMD` instruction**: Ensure that the `CMD` specified in the Dockerfile is correctly configured to run the application.
      - Ensures that the Dockerfile accurately reflects the actual project structure without making assumptions about non-existent files or dependencies.
 3. **Folder Watching and Live Reloading**:
    - Implement a mechanism using an appropriate tool or command that watches for code changes in the specified project files and automatically restarts the application within the container when changes are detected.
