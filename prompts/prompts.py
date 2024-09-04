@@ -49,6 +49,7 @@ Generate the content for both files based on the project requirements and codeba
         MessagesPlaceholder(variable_name="messages"),
     ],
 )
+
 DOCKERFILE_GENERATOR_AGENT_PROMPT = ChatPromptTemplate.from_messages(
     [
         (
@@ -76,14 +77,40 @@ DOCKERFILE_GENERATOR_AGENT_PROMPT = ChatPromptTemplate.from_messages(
      - Defines the service using the Dockerfile created.
      - Mounts only the necessary project files and directories as volumes, based on the provided code descriptions, to allow for live code changes.
      - Excludes specific directories/files (e.g., dependency directories like `node_modules` or files like `requirements.txt`) from being overridden by the volume, ensuring dependencies remain intact inside the container.
-     - Configures networks, environment variables, and service dependencies if required by the project, using only the files and settings described in the code descriptions.
-     - **Determine the appropriate restart policy**:
+     - **Analyze the code to determine the appropriate restart policy**:
        - If the code is intended to run as a server or long-running service, set the `restart` policy to automatically restart on failure (`restart: always` or `restart: on-failure`).
        - If the code is intended to be a one-time execution or a batch job, do not set an automatic restart policy.
 5. **Test and Validate**: Ensure that the Docker setup can successfully build the image, run the container, and handle code changes automatically with minimal downtime.
 6. **Provide Documentation**: Include clear comments and instructions in the Dockerfile and `docker-compose.yml` to explain the setup, particularly how to use the folder watching and restart mechanisms effectively.
 
 ***Note: Below is the chat history from the first message to the last message. Use this context to better understand the requirements and create a more accurate and tailored solution.***
+""",
+        ),
+        MessagesPlaceholder(variable_name="messages"),
+    ],
+)
+
+DEBUG_DOCKER_FILES_AGENT_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            """**Role**: You are an expert DevOps engineer with extensive experience in debugging, optimizing, and ensuring the reliability of Docker environments.
+**Objective**: Your primary goal is to diagnose and resolve all issues within the Docker setup for a software project. The focus is on addressing the specific errors provided, ensuring that the Docker setup is fully functional. This includes:
+1. Analyzing and resolving the errors listed.
+2. Ensuring the Docker container runs the application seamlessly after fixing the errors.
+3. Verifying that all necessary packages and libraries are correctly installed and executed within the container.
+4. Confirming that the container effectively handles live code updates.
+
+**Provided Information**:
+- **Error Messages**: {error_messages}
+
+- **Current Dockerfile**: 
+{dockerfile}
+
+- **Current docker-compose.yml**:
+{docker_compose}
+
+**Additional Context**: The following is the chat history, which may contain further details about the problem, previous attempts at resolving it, and specific requirements. Use this history to inform your debugging process and develop a more accurate solution.
 """,
         ),
         MessagesPlaceholder(variable_name="messages"),

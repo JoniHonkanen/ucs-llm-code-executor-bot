@@ -17,6 +17,8 @@ from agents import (
     read_me_agent,
     dockerizer_agent,
     execute_docker_agent,
+    debug_code_execution_agent,
+    debug_docker_execution_agent,
 )
 from schemas import GraphState
 
@@ -73,6 +75,16 @@ async def debug_code_f(state: GraphState):
     return await debug_code_agent(state, llm)
 
 
+# debug docker if error occurs in docker
+async def debug_docker_f(state: GraphState):
+    return await debug_docker_execution_agent(state, llm)
+
+
+# debug code used in docker if error occurs
+async def debug_code_docker_f(state: GraphState):
+    return await debug_code_execution_agent(state, llm)
+
+
 # create readme and developer files
 async def read_me_f(state: GraphState):
     return await read_me_agent(state, llm, code_file)
@@ -86,23 +98,29 @@ async def dockerize_f(state: GraphState):
 
 # detirmine if we should end (success) or debug (error)
 def decide_to_end(state: GraphState):
-    print(f"\nEntering in Decide to End")
+    print(f"\nENTERING DECIDE TO END FUNCTION")
     print(f"iterations: {state['iterations']}")
     print(f"error: {state['error']}")
 
-    error_message = state.get("error")
+    error_message = state["error"]
 
     if error_message:
-        # check if error is really a warning
-        if isinstance(error_message, str) and "warning" in error_message.lower():
-            return "readme"
-
-        print("Päätetään mikä debuggaus tehdään")
-        if (
-            state["iterations"] >= 0
-        ):  # This condition seems redundant; should it be > 0?
-            print("\n\n\nToo many iterations!!!!!!!!!\n\n\n")
+        # Check if too many iterations have occurred
+        if state["iterations"] >= 1:
+            print("\nToo many iterations! Ending the process.")
             return "end"
+
+        # this is used to determ which debugging approach to take
+        error_type = error_message.type
+
+        print("Deciding which debugging approach to take")
+
+        # Determine if the error is related to Docker or the code inside the container
+        if error_type == "Docker Configuration Error":
+            return "debug_docker"
+        elif error_type == "Docker Execution Error":
+            return "debug_code"
+
         return "debugger"
     else:
         return "readme"
@@ -116,6 +134,8 @@ workflow.add_node("dockerizer", dockerize_f)
 # workflow.add_node("executer", execute_code_f) <- replaced with execute_docker_f
 workflow.add_node("executer_docker", execute_docker_f)
 workflow.add_node("debugger", debug_code_f)
+workflow.add_node("debug_docker", debug_docker_f)
+workflow.add_node("debug_code", debug_code_docker_f)
 workflow.add_node("readme", read_me_f)
 
 # add the edge to the graph
@@ -124,14 +144,18 @@ workflow.add_edge("saver", "dockerizer")
 # workflow.add_edge("dockerizer", "executer")
 workflow.add_edge("dockerizer", "executer_docker")
 workflow.add_edge("debugger", "saver")
+workflow.add_edge("debug_docker", "readme")
+workflow.add_edge("debug_code", "saver")
 workflow.add_edge("readme", END)
 workflow.add_conditional_edges(
     source="executer_docker",
-    # source="executer",
     path=decide_to_end,
     path_map={
-        "readme": "readme",  # If `decide_to_end` returns "end", transition to END
-        "debugger": "debugger",  # If `decide_to_end` returns "debugger", transition to the debugger node
+        "readme": "readme",  # Transition to the README node if `decide_to_end` returns "readme"
+        "debugger": "debugger",  # General debugger transition (if needed)
+        "debug_docker": "debug_docker",  # Transition to Docker debugging if a Docker Error is detected
+        "debug_code": "debug_code",  # Transition to code debugging if a Docker Execution Error is detected
+        "end": END,  # Transition to the END node if too many iterations or another end condition is met
     },
 )
 

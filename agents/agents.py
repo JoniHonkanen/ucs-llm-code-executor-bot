@@ -1,20 +1,30 @@
-from typing import List
 import re
+import inspect
 import asyncio
-import chainlit as cl
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.messages import HumanMessage, AIMessage
 import subprocess
 import shlex
 import os
+import chainlit as cl
+from typing import List
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import HumanMessage, AIMessage
 
 # own imports
-from schemas import Code, Codes, ErrorMessage, GraphState, Documentation, DockerFile
+from schemas import (
+    Code,
+    Codes,
+    ErrorMessage,
+    GraphState,
+    Documentation,
+    DockerFile,
+    DockerFiles,
+)
 from prompts.prompts import (
     CODE_GENERATOR_AGENT_PROMPT,
     CODE_FIXER_AGENT_PROMPT,
     README_DEVELOPER_WRITER_AGENT_PROMPT,
     DOCKERFILE_GENERATOR_AGENT_PROMPT,
+    DEBUG_DOCKER_FILES_AGENT_PROMPT,
 )
 
 
@@ -210,11 +220,18 @@ async def dockerizer_agent(state: GraphState, llm, file_path):
         AIMessage(content=f"Docker.yaml: {docker_things.docker_compose}"),
     ]
 
+    # Store the Dockerfile and Docker Compose configuration in the state
+    # Create an instance of DockerFiles
+    docker_files_instance = DockerFiles(
+        dockerfile=docker_things.dockerfile, docker_compose=docker_things.docker_compose
+    )
+
+    # Store the instance in the state dictionary
+    state["docker_files"] = docker_files_instance
+
     # Use os.path.join to construct full file paths
     dockerfile_path = os.path.join(file_path, "Dockerfile")
     docker_compose_path = os.path.join(file_path, "docker-compose.yml")
-
-    print("\nPUUTTHUU: ", docker_things.missing_packages)
 
     # Save files using the constructed paths
     with open(dockerfile_path, "w", encoding="utf-8") as f:
@@ -227,55 +244,77 @@ async def dockerizer_agent(state: GraphState, llm, file_path):
 
 async def execute_docker_agent(state: GraphState, file_path: str):
     print("\n **EXECUTE DOCKER AGENT **")
-    # print(state)
     error = None
+    current_function = inspect.currentframe().f_code.co_name
+    current_file = __file__
+
     try:
-        # Using asyncio to run subprocess asynchronously
-        process = await asyncio.create_subprocess_exec(
+        # Phase 1: Docker Setup and Build
+        setup_process = await asyncio.create_subprocess_exec(
             "docker-compose",
             "-f",
             f"{file_path}/docker-compose.yml",
             "up",
             "--build",
+            "-d",  # Run in detached mode
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
 
-        # Wait for the process to complete
-        stdout, stderr = await process.communicate()
+        setup_stdout, setup_stderr = await setup_process.communicate()
+        setup_stdout_decoded = setup_stdout.decode()
+        setup_stderr_decoded = setup_stderr.decode()
 
-        # Decode output and errors
-        stdout_decoded = stdout.decode()
-        stderr_decoded = stderr.decode()
-
-        if stdout_decoded:
-            print("Standard Output:\n", stdout_decoded)
-        if stderr_decoded:
-            print("Standard Error:\n", stderr_decoded)
-
-        # Check the return code to determine if an error occurred
-        if process.returncode != 0:
+        if setup_process.returncode != 0:
             error = ErrorMessage(
-                type="Docker error Error",
-                message=f"Execution failed with return code {process.returncode}.",
-                details=stderr_decoded.strip(),
-                code_reference=f"{file_path}/docker-compose.yml",
+                type="Docker Configuration Error",
+                message="Error during Docker setup or build process.",
+                details=setup_stderr_decoded.strip(),
+                code_reference=f"{current_file} - {current_function}",
             )
-        elif stderr_decoded:
-            # Treat any stderr output, even with a zero return code, as a warning or error
-            error = ErrorMessage(
-                type="Execution Warning",
-                message="Execution completed with warnings or errors.",
-                details=stderr_decoded.strip(),
-                code_reference=f"{file_path}/docker-compose.yml",
+            # Attempt to stop any containers that might have started
+            await stop_docker_containers(file_path)
+        else:
+            print("Docker Setup Output:\n", setup_stdout_decoded)
+
+        # If no configuration error, proceed to check for execution errors
+        if not error:
+            # Phase 2: Code Execution
+            container_name = "src-hello_world-1"  # Dynamically determine the container name if necessary
+            execution_process = await asyncio.create_subprocess_exec(
+                "docker",
+                "logs",
+                container_name,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
             )
+
+            execution_stdout, execution_stderr = await execution_process.communicate()
+            execution_stdout_decoded = execution_stdout.decode()
+
+            # Check logs for runtime errors
+            if (
+                "Traceback" in execution_stdout_decoded
+                or "Error" in execution_stdout_decoded
+            ):
+                error = ErrorMessage(
+                    type="Docker Execution Error",
+                    message="The code inside the container encountered an error.",
+                    details=execution_stdout_decoded.strip(),
+                    code_reference=f"{current_file} - {current_function}",
+                )
+
+            print("Container Logs:\n", execution_stdout_decoded)
+
+        # Clean up: Stop the Docker container after execution
+        await stop_docker_containers(file_path)
 
     except Exception as e:
         error = ErrorMessage(
             type="Unexpected Error",
-            message="An unexpected error occurred during execution.",
+            message="An unexpected error occurred.",
             details=str(e),
-            code_reference="execute_docker_agent",
+            code_reference=f"{current_file} - {current_function}",
         )
         print(error.json())
 
@@ -283,3 +322,65 @@ async def execute_docker_agent(state: GraphState, file_path: str):
         await cl.Message(content=error.json()).send()
 
     return {"error": error}
+
+
+async def stop_docker_containers(file_path: str):
+    try:
+        await asyncio.create_subprocess_exec(
+            "docker-compose",
+            "-f",
+            f"{file_path}/docker-compose.yml",
+            "down",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+    except Exception as stop_error:
+        print(f"Failed to stop Docker container: {str(stop_error)}")
+
+
+# DEBUGGING FOR SPECIFIC USE CASES
+# Debug codes if error occurs
+async def debug_docker_execution_agent(state: GraphState, llm):
+    # update docker file so that will run successfully
+    # 1. Check the Dockerfile and Docker Compose configuration for any errors or missing dependencies.
+    print("\n **DEBUG DOCKER AGENT**")
+    error = state["error"]
+    docker_files = state["docker_files"]
+    dockerFile = docker_files.dockerfile
+    dockerCompose = docker_files.docker_compose
+    structured_llm = llm.with_structured_output(DockerFile)
+    prompt = DEBUG_DOCKER_FILES_AGENT_PROMPT.format(
+        dockerfile=dockerFile, docker_compose=dockerCompose, error_message=error.details
+    )
+    fixed_docker_files = structured_llm.invoke(prompt)
+    print("\nNEW FIXED DOCKER FILES:", fixed_docker_files)
+
+    return state
+
+
+async def debug_code_execution_agent(state: GraphState, llm):
+    print("\n **DEBUG CODE**")
+    # update code so that will run successfully
+    error = state["error"]
+    code = state["codes"].codes
+    structured_llm = llm.with_structured_output(Codes)
+    prompt = CODE_FIXER_AGENT_PROMPT.format(original_code=code, error_message=error)
+    fixed_code = structured_llm.invoke(prompt)
+    print("\nNEW FIXED CODE:", fixed_code)
+
+    # Update the state with the fixed code
+    state["codes"] = fixed_code
+
+    # loop through the codes
+    for code in state["codes"].codes:
+        state["messages"] += [
+            AIMessage(
+                content=f"Description of code: {code.description} \n Programming language used: {code.programming_language} \n {code.code}"
+            )
+        ]
+        await cl.Message(content=code.code, language=code.programming_language).send()
+
+    # update iterations to state
+    state["iterations"] += 1
+
+    return state

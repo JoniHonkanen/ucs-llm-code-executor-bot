@@ -6,6 +6,8 @@ from .agents import (
     read_me_agent,
     dockerizer_agent,
     execute_docker_agent,
+    debug_code_execution_agent,
+    debug_docker_execution_agent,
 )
 
 __all__ = [
@@ -16,4 +18,6 @@ __all__ = [
     "read_me_agent",
     "dockerizer_agent",
     "execute_docker_agent",
+    "debug_code_execution_agent",
+    "debug_docker_execution_agent",
 ]
