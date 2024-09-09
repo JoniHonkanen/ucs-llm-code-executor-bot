@@ -50,6 +50,30 @@ class Codes(BaseModel):
     )
 
 
+class FixedCode(BaseModel):
+    """
+    Represents an individual piece of code generated as part of a programming project.
+    """
+
+    description: str = Field(
+        description="A detailed description of what was fixed in this specific code and its purpose."
+    )
+    filename: str = Field(description="The orginal filename")
+    executable_code: bool = Field(
+        description=(
+            "Indicates whether this code is the main executable file required for the "
+            "program to run. There should only be one executable file in the project structure."
+        )
+    )
+    # relationship: str = Field(description="Relationship between this code and other files/folders in the project")
+    code: str = Field(
+        description="The actual code that have been fully fixed. Do not add any newlines using'\n'"
+    )
+    programming_language: str = Field(
+        description="The programming language used to write this code."
+    )
+
+
 # Schema for generated project Readme.md and Developer.md files
 class Documentation(BaseModel):
     """
@@ -68,7 +92,6 @@ class DockerFile(BaseModel):
         description : A detailed description of the Docker setup for the software project.
         dockerfile : The content of the Dockerfile used to build the Docker image for the project.
         docker_compose : The content of the Docker Compose configuration file used to manage and orchestrate the Docker services.
-        folder_watching : The configuration or setup for enabling automatic detection of code changes using folder watching.
     """
 
     description: str = Field(
@@ -85,14 +108,12 @@ class DockerFile(BaseModel):
     docker_compose: str = Field(
         description="The full content of the Docker Compose configuration file, which defines how the Docker services are managed and orchestrated, including service definitions, volume mounting, environment variables, and any network configurations."
     )
-    folder_watching: str = Field(
-        description=(
-            "The setup for folder watching within the Docker container, enabling automatic detection of code changes. "
-            "This includes specifying the tool or method used (e.g., `watchdog` for Python), the files or directories being monitored, "
-            "and how the container is instructed to restart or reload upon detecting changes."
-        )
+    docker_image_name: str = Field(
+        description="The name of the Docker image built for the project, which is used to identify the image in the local Docker registry."
     )
-
+    docker_container_name: str = Field(
+        description="The name of the Docker container created from the Docker image, which is used to identify the running container instance."
+    )
 
 class ErrorMessage(BaseModel):
     """
@@ -111,7 +132,7 @@ class ErrorMessage(BaseModel):
     code_reference: Optional[str] = None
 
 
-# include texts from Dockerfile and docker-compose.yml
+# include texts from Dockerfile and compose.yaml
 class DockerFiles(BaseModel):
     dockerfile: str
     docker_compose: str
@@ -129,9 +150,11 @@ class GraphState(TypedDict):
         iterations : Number of tries
     """
 
-    error: ErrorMessage
-    messages: List
-    codes: Codes
-    docker_files: DockerFiles
-    executable_file_name: str
-    iterations: int
+    error: ErrorMessage  # error messages
+    messages: List  # all messages
+    codes: Codes  # A collection of code files
+    docker_files: DockerFiles  # dockerFile, dockerCompose
+    docker_image_name: str  # Name of the Docker image
+    docker_container_name: str  # Name of the Docker container
+    executable_file_name: str  # What is the name of the executable file
+    iterations: int  # Number of tries

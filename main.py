@@ -36,7 +36,7 @@ async def on_chat_start():
 
 # Define the paths.
 search_path = os.path.join(os.getcwd(), "generated")
-code_file = os.path.join(search_path, "src")
+file_path = os.path.join(search_path, "src")
 test_file = os.path.join(search_path, "test")
 
 # Create the folders and files if necessary.
@@ -57,17 +57,17 @@ async def create_code_f(state: GraphState):
 
 # save generated code to file
 def write_code_to_file_f(state: GraphState):
-    return write_code_to_file_agent(state, code_file)
+    return write_code_to_file_agent(state, file_path)
 
 
 # execute code from folder
 async def execute_code_f(state: GraphState):
-    return await execute_code_agent(state, code_file)
+    return await execute_code_agent(state, file_path)
 
 
 # execute docker from folder
 async def execute_docker_f(state: GraphState):
-    return await execute_docker_agent(state, code_file)
+    return await execute_docker_agent(state, file_path)
 
 
 # debug codes if error occurs
@@ -77,23 +77,23 @@ async def debug_code_f(state: GraphState):
 
 # debug docker if error occurs in docker
 async def debug_docker_f(state: GraphState):
-    return await debug_docker_execution_agent(state, llm)
+    return await debug_docker_execution_agent(state, llm, file_path)
 
 
 # debug code used in docker if error occurs
 async def debug_code_docker_f(state: GraphState):
-    return await debug_code_execution_agent(state, llm)
+    return await debug_code_execution_agent(state, llm, file_path)
 
 
 # create readme and developer files
 async def read_me_f(state: GraphState):
-    return await read_me_agent(state, llm, code_file)
+    return await read_me_agent(state, llm, file_path)
 
 
 # generate dockerfile and docker-compose file
 # TODO:: start docker etc.
 async def dockerize_f(state: GraphState):
-    return await dockerizer_agent(state, llm, code_file)
+    return await dockerizer_agent(state, llm, file_path)
 
 
 # detirmine if we should end (success) or debug (error)
@@ -144,8 +144,8 @@ workflow.add_edge("saver", "dockerizer")
 # workflow.add_edge("dockerizer", "executer")
 workflow.add_edge("dockerizer", "executer_docker")
 workflow.add_edge("debugger", "saver")
-workflow.add_edge("debug_docker", "readme")
-workflow.add_edge("debug_code", "saver")
+workflow.add_edge("debug_docker", "executer_docker")
+workflow.add_edge("debug_code", "executer_docker")
 workflow.add_edge("readme", END)
 workflow.add_conditional_edges(
     source="executer_docker",
