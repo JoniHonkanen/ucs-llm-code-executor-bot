@@ -50,6 +50,30 @@ class Codes(BaseModel):
     )
 
 
+class FixedCode(BaseModel):
+    """
+    Represents an individual piece of code generated as part of a programming project.
+    """
+
+    description: str = Field(
+        description="A detailed description of what was fixed in this specific code and its purpose."
+    )
+    filename: str = Field(description="The orginal filename")
+    executable_code: bool = Field(
+        description=(
+            "Indicates whether this code is the main executable file required for the "
+            "program to run. There should only be one executable file in the project structure."
+        )
+    )
+    # relationship: str = Field(description="Relationship between this code and other files/folders in the project")
+    code: str = Field(
+        description="The actual code that have been fully fixed. Do not add any newlines using'\n'"
+    )
+    programming_language: str = Field(
+        description="The programming language used to write this code."
+    )
+
+
 # Schema for generated project Readme.md and Developer.md files
 class Documentation(BaseModel):
     """
@@ -68,32 +92,28 @@ class DockerFile(BaseModel):
         description : A detailed description of the Docker setup for the software project.
         dockerfile : The content of the Dockerfile used to build the Docker image for the project.
         docker_compose : The content of the Docker Compose configuration file used to manage and orchestrate the Docker services.
-        folder_watching : The configuration or setup for enabling automatic detection of code changes using folder watching.
     """
 
     description: str = Field(
         description=(
-            "A detailed description of the Docker setup for the software project. "
-            "This includes the purpose of using Docker, the configuration options chosen, "
-            "and any additional features or functionalities enabled by Docker."
+            "A detailed explanation of the Docker setup for the software project. "
+            "This includes the purpose of using Docker, the rationale behind the choices made in the Dockerfile "
+            "and Docker Compose file, and any specific configurations or optimizations for development and deployment. "
+            "It should also touch on how folder watching is implemented and the expected behavior when code changes."
         )
     )
     dockerfile: str = Field(
-        description="The content of the Dockerfile used to build the Docker image for the project."
+        description="The complete content of the Dockerfile, detailing all the instructions needed to build the Docker image, including base image selection, dependency installation, file copying, and the final command to run the application."
     )
     docker_compose: str = Field(
-        description="The content of the Docker Compose configuration file used to manage and orchestrate the Docker services."
+        description="The full content of the Docker Compose configuration file, which defines how the Docker services are managed and orchestrated, including service definitions, volume mounting, environment variables, and any network configurations."
     )
-    folder_watching: str = Field(
-        description=(
-            "The configuration or setup for enabling automatic detection of code changes using folder watching. "
-            "This should include any tools or scripts used, as well as the specific folders being monitored."
-        )
+    docker_image_name: str = Field(
+        description="The name of the Docker image built for the project, which is used to identify the image in the local Docker registry."
     )
-    missing_packages: List[str] = Field(
-        description="List of missing packages that need to be installed so program will run as wanted.",
+    docker_container_name: str = Field(
+        description="The name of the Docker container created from the Docker image, which is used to identify the running container instance."
     )
-
 
 class ErrorMessage(BaseModel):
     """
@@ -112,6 +132,12 @@ class ErrorMessage(BaseModel):
     code_reference: Optional[str] = None
 
 
+# include texts from Dockerfile and compose.yaml
+class DockerFiles(BaseModel):
+    dockerfile: str
+    docker_compose: str
+
+
 # State of the graph (agents)
 class GraphState(TypedDict):
     """
@@ -124,8 +150,11 @@ class GraphState(TypedDict):
         iterations : Number of tries
     """
 
-    error: ErrorMessage
-    messages: List
-    codes: Codes
-    executable_file_name: str
-    iterations: int
+    error: ErrorMessage  # error messages
+    messages: List  # all messages
+    codes: Codes  # A collection of code files
+    docker_files: DockerFiles  # dockerFile, dockerCompose
+    docker_image_name: str  # Name of the Docker image
+    docker_container_name: str  # Name of the Docker container
+    executable_file_name: str  # What is the name of the executable file
+    iterations: int  # Number of tries
