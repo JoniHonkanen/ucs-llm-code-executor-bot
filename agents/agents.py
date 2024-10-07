@@ -256,9 +256,12 @@ async def execute_docker_agent(state: GraphState, file_path: str):
     current_function = inspect.currentframe().f_code.co_name
     current_file = __file__
 
+    # Use container name from state
+    container_name = state["docker_container_name"]
+
     try:
         # Phase 1: Docker Setup and Build
-        print("Building and starting Docker container...")
+        print(f"Building and starting Docker container: {container_name}...")
 
         # Run docker-compose up --build
         compose_file_path = os.path.join(file_path, "compose.yaml")
@@ -286,8 +289,7 @@ async def execute_docker_agent(state: GraphState, file_path: str):
         print("Docker Setup Output:\n", setup_stdout.decode())
 
         # Phase 2: Fetch logs from the container
-        container_name = state["docker_container_name"]
-        print("Fetching logs from the container...")
+        print(f"Fetching logs from the container: {container_name}...")
 
         log_process = await asyncio.create_subprocess_exec(
             "docker",
@@ -414,7 +416,7 @@ async def debug_code_execution_agent(state: GraphState, llm, file_path):
     return state
 
 
-# Agent for logging container for errors using docker logs
+# Agent for logging container for errors using docker logs (code related errors!)
 async def log_docker_container_errors(state: GraphState):
     print("\n** LOG DOCKER CONTAINER ERRORS AGENT **")
 
@@ -486,8 +488,22 @@ def parse_error_from_logs(logs: str) -> ErrorMessage:
     """
     error_type = "Execution Error"
 
+    # critical_error_keywords = [
+    # "traceback", "exception", "failed", "critical", "syntaxerror",
+    # "indentationerror", "nameerror", "typeerror", "valueerror",
+    # "importerror", "modulenotfounderror", "indexerror", "keyerror",
+    # "attributeerror", "zerodivisionerror", "oserror", "runtimeerror",
+    # "memoryerror", "timeouterror", "recursionerror"
+    # ]
+
     # Example: Look for specific patterns like "Traceback", "Exception", or other critical failure terms
-    critical_error_keywords = ["traceback", "exception", "failed", "critical"]
+    critical_error_keywords = [
+        "traceback",
+        "exception",
+        "failed",
+        "critical",
+        "syntaxerror",
+    ]
 
     error_lines = [
         line
