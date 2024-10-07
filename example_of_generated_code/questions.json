@@ -1,0 +1,14 @@
+[
+    {
+        "question": "What is the capital of France?",
+        "correctAnswer": "Paris"
+    },
+    {
+        "question": "What is 2 + 2?",
+        "correctAnswer": "4"
+    },
+    {
+        "question": "What is the color of the sky on a clear day?",
+        "correctAnswer": "Blue"
+    }
+]

@@ -1,0 +1,13 @@
+{
+  "name": "quiz-game",
+  "version": "1.0.0",
+  "description": "A console-based quiz game",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "quiz-game": "file:",
+    "readline": "latest"
+  }
+}
