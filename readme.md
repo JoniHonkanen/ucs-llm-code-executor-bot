@@ -11,30 +11,6 @@ The main goal of the project is to explore the potential of language models and 
 
 This project was developed in Python and uses the OpenAI API to integrate large language models. We also employed LangChain and LangGraph for managing AI agent workflows, and Chainlit for the user interface.
 
-<div style="display: flex; flex-wrap: wrap; align-items: center;">
-  <div style="flex: 1; display: flex; align-items: center; justify-content: flex-start; padding: 10px;">
-    <p style="text-align: left; max-width: 90%;"><strong>This project under the GPT Lab Seinäjoki program, supports the regional strategy of fostering an innovative ecosystem and advancing smart, skilled development. Its goal is to introduce new AI knowledge and technology to the region, enhance research and innovation activities, and improve business productivity.</strong></p>
-  </div>
-  <div style="flex: 1; padding: 10px;">
-    <img src="images/gptlab_sjk_logo.png" alt="GPT Lab Seinäjoki Logo" style="max-width: 100%; height: 150px;">
-  </div>
-</div>
-
-<style>
-  @media (max-width: 768px) {
-    div[style*="display: flex"] {
-      flex-direction: column;
-    }
-    div[style*="justify-content: flex-start"] {
-      justify-content: center;
-    }
-    p {
-      text-align: center;
-    }
-  }
-</style>
-
-
 ## Features
 
 - **Code Generation**: Based on user-provided input, AI agents generate fully functional program code.
@@ -70,6 +46,12 @@ This project was developed in Python and uses the OpenAI API to integrate large 
 - Improve code modularization for larger projects.
 - Enhance error checking and handling capabilities.
 - Expand support for additional programming languages and frameworks.
+
+# GPT Lab Seinäjoki
+
+**This project under the GPT Lab Seinäjoki program supports the regional strategy of fostering an innovative ecosystem and advancing smart, skilled development. Its goal is to introduce new AI knowledge and technology to the region, enhance research and innovation activities, and improve business productivity.**
+
+<img src="images/gptlab_sjk_logo.png" alt="GPT Lab Seinäjoki Logo" style="height: 150px; width: auto;">
 
 ## License
 
