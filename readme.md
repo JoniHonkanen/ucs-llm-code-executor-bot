@@ -1,6 +1,57 @@
-# Code Generation and Debugging Workflow
 
-This project automates Python code generation, testing, debugging, and execution using AI-driven agents. The workflow iterates through code creation, error detection, and fixing until successful execution, visualizing the process with a state graph. Ideal for streamlining software development tasks.
+# AI-Agent Powered Code Generation and Docker Setup
+
+## Introduction
+
+This project demonstrates the use of language models and AI agents to fully automate the process of generating code based on user input, setting up a Docker environment, and creating documentation for the project, including README.md and developer.md files. The AI agents collaborate to analyze the user’s request, generate the necessary code, configure Docker, and produce relevant documentation.
+
+Each task in the workflow is handled by a specific agent. This includes analyzing the user's input, generating program code, setting up the required Docker environment, and finally ensuring that all project files, including code and documentation, are produced correctly. An additional agent manages error handling during Docker startup or code execution.
+
+The main goal of the project is to explore the potential of language models and AI agents in automating the entire software development process, from code generation to deployment. By leveraging Docker, the generated programs can run across various programming languages in an isolated environment. Currently, the project supports small-scale program generation, but additional work is required for larger, more complex systems, particularly in areas such as code modularization and robust error handling.
+
+This project was developed in Python and uses the OpenAI API to integrate large language models. We also employed LangChain and LangGraph for managing AI agent workflows, and Chainlit for the user interface.
+
+<div style="display: flex; flex-wrap: wrap; align-items: center;">
+  <div style="flex: 1; display: flex; align-items: center; justify-content: flex-start; padding: 10px;">
+    <p style="text-align: left; max-width: 90%;"><strong>This project under the GPT Lab Seinäjoki program, supports the regional strategy of fostering an innovative ecosystem and advancing smart, skilled development. Its goal is to introduce new AI knowledge and technology to the region, enhance research and innovation activities, and improve business productivity.</strong></p>
+  </div>
+  <div style="flex: 1; padding: 10px;">
+    <img src="images/gptlab_sjk_logo.png" alt="GPT Lab Seinäjoki Logo" style="max-width: 100%; height: 150px;">
+  </div>
+</div>
+
+<style>
+  @media (max-width: 768px) {
+    div[style*="display: flex"] {
+      flex-direction: column;
+    }
+    div[style*="justify-content: flex-start"] {
+      justify-content: center;
+    }
+    p {
+      text-align: center;
+    }
+  }
+</style>
+
+
+## Features
+
+- **Code Generation**: Based on user-provided input, AI agents generate fully functional program code.
+- **Docker Environment Setup**: Automatically configures a Docker environment to run the generated code.
+- **Automated Documentation**: AI agents generate documentation for the project, including README.md.
+- **Error Handling**: Handles errors in Docker startup and code execution.
+
+## Technologies Used
+
+- **Python**: Core language for project development.
+- **OpenAI API**: Provides the large language model for generating code and handling input.
+- **LangChain**: Framework for integrating language models into the application.
+- **LangGraph**: Manages workflows and interactions between AI agents.
+- **Chainlit**: Used to create the user interface for the project.
+- **Docker**: Ensures that generated programs run in isolated environments.
+
+
 
 ## Installation
 
@@ -12,3 +63,24 @@ This project automates Python code generation, testing, debugging, and execution
    1. [LLM]
       model=gpt-4o-mini
 5. run program -> python main.py
+
+
+## Future Improvements
+
+- Improve code modularization for larger projects.
+- Enhance error checking and handling capabilities.
+- Expand support for additional programming languages and frameworks.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+
+
+
+
+
+
+
+
+
